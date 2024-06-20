@@ -1,0 +1,14 @@
+[package]
+name = "chip8_emulator"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "chip8_core"
+path = "chip8_core/src/lib.rs"
+
+[[bin]]
+name = "chip8_desktop"
+path = "chip8_desktop/src/main.rs"
+
+[dependencies]
