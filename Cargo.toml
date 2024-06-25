@@ -8,7 +8,7 @@ name = "chip8_core"
 path = "chip8_core/src/lib.rs"
 
 [[bin]]
-name = "chip8_desktop"
-path = "chip8_desktop/src/main.rs"
+name = "chip8_ui"
+path = "chip8_ui/src/main.rs"
 
 [dependencies]
