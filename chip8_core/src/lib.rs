@@ -12,6 +12,26 @@ const START_ADDRESS: u16 = 0x200;
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
 
+const FONTSET_SIZE: usize = 80;
+pub const FONTSET: [u8; FONTSET_SIZE] = [
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80, // F
+];
+
 pub struct Chip8 {
     program_counter: u16,
     ram: [u8; RAM_SIZE],
@@ -21,12 +41,14 @@ pub struct Chip8 {
     stack: [u16; STACK_SIZE],
     delay_timer: u8,
     sound_timer: u8,
-    screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
+
+    pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
+    pub op_codes_length: usize,
 }
 
 impl Chip8 {
     pub fn new() -> Self {
-        Self {
+        let mut instance = Self {
             program_counter: START_ADDRESS,
             ram: [0; RAM_SIZE],
             screen: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
@@ -36,7 +58,12 @@ impl Chip8 {
             stack: [0; STACK_SIZE],
             delay_timer: 0,
             sound_timer: 0,
-        }
+            op_codes_length: 0,
+        };
+
+        instance.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
+
+        return instance;
     }
 
     pub fn stack_push(&mut self, val: u16) {
@@ -62,6 +89,8 @@ impl Chip8 {
 
         let start = START_ADDRESS as usize;
         let end = (START_ADDRESS as usize) + buffer.len();
+        self.op_codes_length = buffer.len();
+
         self.ram[start..end].copy_from_slice(&buffer);
     }
 
@@ -93,8 +122,6 @@ impl Chip8 {
     /// Executes the provided opcode
     ///
     pub fn execute(&mut self, op: u16) {
-        println!("Executing opcode: {:X}", op);
-
         // Extract the digits from the opcode
         let digit1 = (op & 0xF000) >> 12;
         let digit2 = (op & 0x0F00) >> 8;
@@ -102,9 +129,14 @@ impl Chip8 {
         let digit4 = op & 0x000F;
 
         match (digit1, digit2, digit3, digit4) {
-            // CALL NNN
+            (0, 0, 0xE, 0) => opcodes::op_00e0(self, op),
+            (0, 0, 0xE, 0xE) => opcodes::op_00ee(self, op),
+            (1, _, _, _) => opcodes::op_1nnn(self, op),
             (2, _, _, _) => opcodes::op_2nnn(self, op),
-            (_, _, _, _) => println!("Unimplemented opcode: {:#04x}", op),
+            (6, _, _, _) => opcodes::op_6xnn(self, op, digit2),
+            (0xA, _, _, _) => opcodes::op_annn(self, op),
+            (0xD, _, _, _) => opcodes::op_dxyn(self, digit2, digit3, digit4),
+            (_, _, _, _) => {} //println!("Unimplemented opcode: {:#04x}", op),
         }
     }
 }
