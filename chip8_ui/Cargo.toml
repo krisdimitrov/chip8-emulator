@@ -5,7 +5,4 @@ edition = "2021"
 
 [dependencies]
 chip8_core = { path = "../chip8_core" }
-crossterm = "0.27.0"
-dubble = "0.1.0"
-term_cursor = "0.2.1"
-
+sdl2 = "0.37.0"

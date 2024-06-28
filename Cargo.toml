@@ -12,7 +12,4 @@ name = "chip8_ui"
 path = "chip8_ui/src/main.rs"
 
 [dependencies]
-clearscreen = "3.0.0"
-crossterm = "0.27.0"
-dubble = "0.1.0"
-term_cursor = "0.2.1"
+sdl2 = "0.37.0"
