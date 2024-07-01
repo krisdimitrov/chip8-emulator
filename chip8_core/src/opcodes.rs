@@ -35,10 +35,33 @@ pub fn op_2nnn(chip: &mut Chip8, op: u16) {
     chip.program_counter = nnn;
 }
 
+///
+/// Skip next instruction if Vx == NN
+pub fn op_3xnn(chip: &mut Chip8, op: u16, digit2: u16) {
+    let x = digit2 as usize;
+    let nn = op & 0xFF;
+
+    if chip.v_registers[x] == nn as u8 {
+        chip.program_counter += 2;
+    }
+}
+
+///
+/// Vx = NN
 pub fn op_6xnn(chip: &mut Chip8, op: u16, digit2: u16) {
     let x = digit2 as usize;
     let nn = (op & 0xFF) as u8;
+
     chip.v_registers[x] = nn;
+}
+
+///
+/// Vx += NN
+pub fn op_7xnn(chip: &mut Chip8, op: u16, digit2: u16) {
+    let x = digit2;
+    let nn = (op & 0xFF) as u8;
+
+    chip.v_registers[x as usize] = chip.v_registers[x as usize].wrapping_add(nn);
 }
 
 ///
