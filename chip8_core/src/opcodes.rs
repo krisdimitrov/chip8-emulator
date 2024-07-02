@@ -165,3 +165,68 @@ pub fn op_dxyn(chip: &mut Chip8, digit2: u16, digit3: u16, digit4: u16) {
         chip.v_registers[0xF] = 0;
     }
 }
+
+///
+/// Skip next instruction if key with the value of Vx is pressed
+pub fn op_ex9e(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let vx = chip.v_registers[x];
+    let key = chip.keyboard[vx as usize];
+
+    if key {
+        chip.program_counter += 2;
+    }
+}
+
+///
+/// Skip next instruction if key with the value of Vx is not pressed
+pub fn op_exa1(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let vx = chip.v_registers[x];
+    let key = chip.keyboard[vx as usize];
+
+    if !key {
+        chip.program_counter += 2;
+    }
+}
+
+///
+///
+pub fn op_fx1e(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let vx = chip.v_registers[x] as u16;
+
+    chip.i_register = chip.i_register.wrapping_add(vx);
+}
+
+///
+/// Set Vx = delay timer value
+pub fn op_fx07(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    chip.v_registers[x] = chip.delay_timer;
+}
+
+///
+/// Set Delay Timer = Vx
+pub fn op_fx15(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    chip.delay_timer = chip.v_registers[x];
+}
+
+pub fn op_fx55(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let i = chip.i_register as usize;
+
+    for idx in 0..=x {
+        chip.ram[i + idx] = chip.v_registers[idx];
+    }
+}
+
+pub fn op_fx65(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let i = chip.i_register as usize;
+
+    for idx in 0..=x {
+        chip.v_registers[idx] = chip.ram[i + idx];
+    }
+}

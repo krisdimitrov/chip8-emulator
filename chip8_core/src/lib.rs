@@ -41,6 +41,7 @@ pub struct Chip8 {
     stack: [u16; STACK_SIZE],
     delay_timer: u8,
     sound_timer: u8,
+    keyboard: [bool; 16],
 
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
 }
@@ -57,6 +58,7 @@ impl Chip8 {
             stack: [0; STACK_SIZE],
             delay_timer: 0,
             sound_timer: 0,
+            keyboard: [false; 16],
         };
 
         instance.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
@@ -72,6 +74,10 @@ impl Chip8 {
     pub fn stack_pop(&mut self) -> u16 {
         self.stack_pointer -= 1;
         return self.stack[self.stack_pointer as usize];
+    }
+
+    pub fn key_press(&mut self, index: usize, pressed: bool) {
+        self.keyboard[index] = pressed;
     }
 
     ///
@@ -141,6 +147,13 @@ impl Chip8 {
             (8, _, _, 3) => opcodes::op_8xy3(self, op, digit2, digit3),
             (0xA, _, _, _) => opcodes::op_annn(self, op),
             (0xD, _, _, _) => opcodes::op_dxyn(self, digit2, digit3, digit4),
+            (0xE, _, 9, 0xE) => opcodes::op_ex9e(self, digit2),
+            (0xE, _, 0xA, 1) => opcodes::op_exa1(self, digit2),
+            (0xF, _, 1, 0xE) => opcodes::op_fx1e(self, digit2),
+            (0xF, _, 0, 7) => opcodes::op_fx07(self, digit2),
+            (0xF, _, 1, 5) => opcodes::op_fx15(self, digit2),
+            (0xF, _, 5, 5) => opcodes::op_fx55(self, digit2),
+            (0xF, _, 6, 5) => opcodes::op_fx65(self, digit2),
             (_, _, _, _) => {
                 println!("Unimplemented opcode: {:#04x}", op)
             }
