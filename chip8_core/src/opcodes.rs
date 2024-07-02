@@ -6,6 +6,9 @@ use crate::Chip8;
 /// Used to mask the address from the opcode and extract the 12 least significant bits
 const ADDRESS_MASK: u16 = 0x0FFF;
 
+/// Used to mask the value from the opcode and extract the 8 least significant bits
+const VALUE_MASK: u16 = 0xFF;
+
 ///
 /// Clear screen.
 pub fn op_00e0(chip: &mut Chip8, _op: u16) {
@@ -36,12 +39,34 @@ pub fn op_2nnn(chip: &mut Chip8, op: u16) {
 }
 
 ///
-/// Skip next instruction if Vx == NN
+/// Skip next instruction if Vx != NN
 pub fn op_3xnn(chip: &mut Chip8, op: u16, digit2: u16) {
     let x = digit2 as usize;
-    let nn = op & 0xFF;
+    let nn = (op & VALUE_MASK) as u8;
 
-    if chip.v_registers[x] == nn as u8 {
+    if chip.v_registers[x] == nn {
+        chip.program_counter += 2;
+    }
+}
+
+///
+/// Skip next instruction if Vx == NN
+pub fn op_4xnn(chip: &mut Chip8, op: u16, digit2: u16) {
+    let x = digit2 as usize;
+    let nn = (op & VALUE_MASK) as u8;
+
+    if chip.v_registers[x] != nn {
+        chip.program_counter += 2;
+    }
+}
+
+///
+/// Skip next instruction if Vx != Vy
+pub fn op_5xy0(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    if chip.v_registers[x] == chip.v_registers[y] {
         chip.program_counter += 2;
     }
 }
@@ -62,6 +87,38 @@ pub fn op_7xnn(chip: &mut Chip8, op: u16, digit2: u16) {
     let nn = (op & 0xFF) as u8;
 
     chip.v_registers[x as usize] = chip.v_registers[x as usize].wrapping_add(nn);
+}
+
+///
+/// Set Vx = Vy
+pub fn op_8xy0(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    chip.v_registers[x] = chip.v_registers[y];
+}
+
+///
+///
+pub fn op_8xy1(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    chip.v_registers[x] |= chip.v_registers[y];
+}
+
+pub fn op_8xy2(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    chip.v_registers[x] &= chip.v_registers[y];
+}
+
+pub fn op_8xy3(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    chip.v_registers[x] ^= chip.v_registers[y];
 }
 
 ///

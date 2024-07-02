@@ -43,7 +43,6 @@ pub struct Chip8 {
     sound_timer: u8,
 
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
-    pub op_codes_length: usize,
 }
 
 impl Chip8 {
@@ -58,7 +57,6 @@ impl Chip8 {
             stack: [0; STACK_SIZE],
             delay_timer: 0,
             sound_timer: 0,
-            op_codes_length: 0,
         };
 
         instance.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
@@ -89,7 +87,6 @@ impl Chip8 {
 
         let start = START_ADDRESS as usize;
         let end = (START_ADDRESS as usize) + buffer.len();
-        self.op_codes_length = buffer.len();
 
         self.ram[start..end].copy_from_slice(&buffer);
     }
@@ -134,11 +131,19 @@ impl Chip8 {
             (1, _, _, _) => opcodes::op_1nnn(self, op),
             (2, _, _, _) => opcodes::op_2nnn(self, op),
             (3, _, _, _) => opcodes::op_3xnn(self, op, digit2),
+            (4, _, _, _) => opcodes::op_4xnn(self, op, digit2),
+            (5, _, _, 0) => opcodes::op_5xy0(self, op, digit2, digit3),
             (6, _, _, _) => opcodes::op_6xnn(self, op, digit2),
             (7, _, _, _) => opcodes::op_7xnn(self, op, digit2),
+            (8, _, _, 0) => opcodes::op_8xy0(self, op, digit2, digit3),
+            (8, _, _, 1) => opcodes::op_8xy1(self, op, digit2, digit3),
+            (8, _, _, 2) => opcodes::op_8xy2(self, op, digit2, digit3),
+            (8, _, _, 3) => opcodes::op_8xy3(self, op, digit2, digit3),
             (0xA, _, _, _) => opcodes::op_annn(self, op),
             (0xD, _, _, _) => opcodes::op_dxyn(self, digit2, digit3, digit4),
-            (_, _, _, _) => {} //println!("Unimplemented opcode: {:#04x}", op),
+            (_, _, _, _) => {
+                println!("Unimplemented opcode: {:#04x}", op)
+            }
         }
     }
 }
