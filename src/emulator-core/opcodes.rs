@@ -1,7 +1,7 @@
 use rand::random;
 
 ///
-/// OP Code implementations
+/// OP Code implementations for CHIP-8 emulator core.
 ///
 use crate::Chip8;
 

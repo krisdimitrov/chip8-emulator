@@ -1,6 +1,11 @@
 ///
-///
-///
+/// Emulator core for the CHIP-8 emulator.
+/// Technical Reference: https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference
+/// 
+/// Author: Kris Dimitrov @krisdimitrov
+/// Special thanks to the following users for their awesome tutorials and materials:
+/// @mattmikolay @Timendus @aquova
+/// 
 pub mod opcodes;
 use std::{fs::File, io::Read};
 

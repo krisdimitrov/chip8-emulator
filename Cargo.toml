@@ -5,11 +5,11 @@ edition = "2021"
 
 [lib]
 name = "chip8_core"
-path = "chip8_core/src/lib.rs"
+path = "src/emulator-core/lib.rs"
 
 [[bin]]
 name = "chip8_ui"
-path = "chip8_ui/src/main.rs"
+path = "src/main.rs"
 
 [dependencies]
 rand = "0.8.5"
