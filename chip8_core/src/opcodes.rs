@@ -1,3 +1,5 @@
+use rand::random;
+
 ///
 /// OP Code implementations
 ///
@@ -8,6 +10,8 @@ const ADDRESS_MASK: u16 = 0x0FFF;
 
 /// Used to mask the value from the opcode and extract the 8 least significant bits
 const VALUE_MASK: u16 = 0xFF;
+
+const FLAG_REGISTER_INDEX: usize = 0xF;
 
 ///
 /// Clear screen.
@@ -100,25 +104,89 @@ pub fn op_8xy0(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
 
 ///
 ///
-pub fn op_8xy1(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+pub fn op_8xy1(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
 
     chip.v_registers[x] |= chip.v_registers[y];
 }
 
-pub fn op_8xy2(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+pub fn op_8xy2(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
 
     chip.v_registers[x] &= chip.v_registers[y];
 }
 
-pub fn op_8xy3(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+pub fn op_8xy3(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
 
     chip.v_registers[x] ^= chip.v_registers[y];
+}
+
+pub fn op_8xy4(chip: &mut Chip8, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    let (new_value, overflowed) = chip.v_registers[x].overflowing_add(chip.v_registers[y]);
+    let flag_value = if overflowed { 1 } else { 0 };
+
+    chip.v_registers[x] = new_value;
+    chip.v_registers[FLAG_REGISTER_INDEX] = flag_value;
+}
+
+pub fn op_8xy5(chip: &mut Chip8, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    let (new_value, overflowed) = chip.v_registers[x].overflowing_sub(chip.v_registers[y]);
+    let flag_value = if overflowed { 0 } else { 1 };
+
+    chip.v_registers[x] = new_value;
+    chip.v_registers[FLAG_REGISTER_INDEX] = flag_value;
+}
+
+pub fn op_8xy6(chip: &mut Chip8, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    let vy_value = chip.v_registers[y];
+    let least_bit = vy_value & 1;
+
+    chip.v_registers[x] = (vy_value >> 1) as u8;
+    chip.v_registers[FLAG_REGISTER_INDEX] = least_bit;
+}
+
+pub fn op_8xy7(chip: &mut Chip8, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    let (new_value, overflow) = chip.v_registers[y].overflowing_sub(chip.v_registers[x]);
+    let flag_value = if overflow { 0 } else { 1 };
+
+    chip.v_registers[x] = new_value;
+    chip.v_registers[FLAG_REGISTER_INDEX] = flag_value;
+}
+
+pub fn op_8xye(chip: &mut Chip8, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    let vy_value = chip.v_registers[y];
+    let least_bit = vy_value & 1;
+
+    chip.v_registers[x] = (vy_value << 1) as u8;
+    chip.v_registers[FLAG_REGISTER_INDEX] = least_bit;
+}
+
+pub fn op_9xy0(chip: &mut Chip8, digit2: u16, digit3: u16) {
+    let x = digit2 as usize;
+    let y = digit3 as usize;
+
+    if chip.v_registers[x] != chip.v_registers[y] {
+        chip.program_counter += 2;
+    }
 }
 
 ///
@@ -126,6 +194,14 @@ pub fn op_8xy3(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
 pub fn op_annn(chip: &mut Chip8, op: u16) {
     let nnn: u16 = op & ADDRESS_MASK;
     chip.i_register = nnn;
+}
+
+pub fn op_cxnn(chip: &mut Chip8, op: u16, digit2: u16) {
+    let x = digit2 as usize;
+    let nn = (op & VALUE_MASK) as u8;
+    let random_value: u8 = random();
+
+    chip.v_registers[x] = random_value & nn;
 }
 
 pub fn op_dxyn(chip: &mut Chip8, digit2: u16, digit3: u16, digit4: u16) {
@@ -190,6 +266,35 @@ pub fn op_exa1(chip: &mut Chip8, digit2: u16) {
     }
 }
 
+pub fn op_fx0a(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let mut key_pressed = false;
+
+    for i in 0..chip.keyboard.len() {
+        if (chip.keyboard[i]) {
+            key_pressed = true;
+            chip.v_registers[x] = i as u8;
+            break;
+        }
+    }
+
+    if !key_pressed {
+        chip.program_counter -= 2;
+    }
+}
+
+pub fn op_fx18(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    chip.sound_timer = chip.v_registers[x];
+}
+
+pub fn op_fx29(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let c = chip.v_registers[x] as u16;
+
+    chip.i_register = c * 5;
+}
+
 ///
 ///
 pub fn op_fx1e(chip: &mut Chip8, digit2: u16) {
@@ -211,6 +316,23 @@ pub fn op_fx07(chip: &mut Chip8, digit2: u16) {
 pub fn op_fx15(chip: &mut Chip8, digit2: u16) {
     let x = digit2 as usize;
     chip.delay_timer = chip.v_registers[x];
+}
+
+pub fn op_fx33(chip: &mut Chip8, digit2: u16) {
+    let x = digit2 as usize;
+    let mut vx = chip.v_registers[x] as f32;
+
+    let ones = vx % 10.0;
+    vx /= 10.0;
+
+    let tens = vx % 10.0;
+    vx /= 10.0;
+
+    let hundreds = vx % 10.0;
+
+    chip.ram[chip.i_register as usize] = hundreds as u8;
+    chip.ram[(chip.i_register + 1) as usize] = tens as u8;
+    chip.ram[(chip.i_register + 2) as usize] = ones as u8;
 }
 
 pub fn op_fx55(chip: &mut Chip8, digit2: u16) {

@@ -105,6 +105,19 @@ impl Chip8 {
         self.execute(op);
     }
 
+    pub fn tick_timers(&mut self) {
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        if self.sound_timer > 0 {
+            if self.sound_timer == 1 {
+                println!("BEEP");
+            }
+            self.sound_timer -= 1;
+        }
+    }
+
     ///
     /// Fetches the next opcode from RAM and increments
     /// the program counter by 2
@@ -142,16 +155,27 @@ impl Chip8 {
             (6, _, _, _) => opcodes::op_6xnn(self, op, digit2),
             (7, _, _, _) => opcodes::op_7xnn(self, op, digit2),
             (8, _, _, 0) => opcodes::op_8xy0(self, op, digit2, digit3),
-            (8, _, _, 1) => opcodes::op_8xy1(self, op, digit2, digit3),
-            (8, _, _, 2) => opcodes::op_8xy2(self, op, digit2, digit3),
-            (8, _, _, 3) => opcodes::op_8xy3(self, op, digit2, digit3),
+            (8, _, _, 1) => opcodes::op_8xy1(self, digit2, digit3),
+            (8, _, _, 2) => opcodes::op_8xy2(self, digit2, digit3),
+            (8, _, _, 3) => opcodes::op_8xy3(self, digit2, digit3),
+            (8, _, _, 4) => opcodes::op_8xy4(self, digit2, digit3),
+            (8, _, _, 5) => opcodes::op_8xy5(self, digit2, digit3),
+            (8, _, _, 6) => opcodes::op_8xy6(self, digit2, digit3),
+            (8, _, _, 7) => opcodes::op_8xy7(self, digit2, digit3),
+            (8, _, _, 0xE) => opcodes::op_8xye(self, digit2, digit3),
+            (9, _, _, 0) => opcodes::op_9xy0(self, digit2, digit3),
             (0xA, _, _, _) => opcodes::op_annn(self, op),
             (0xD, _, _, _) => opcodes::op_dxyn(self, digit2, digit3, digit4),
+            (0xC, _, _, _) => opcodes::op_cxnn(self, op, digit2),
             (0xE, _, 9, 0xE) => opcodes::op_ex9e(self, digit2),
             (0xE, _, 0xA, 1) => opcodes::op_exa1(self, digit2),
+            (0xF, _, 0, 0xA) => opcodes::op_fx0a(self, digit2),
+            (0xF, _, 1, 8) => opcodes::op_fx18(self, digit2),
+            (0xF, _, 2, 9) => opcodes::op_fx29(self, digit2),
             (0xF, _, 1, 0xE) => opcodes::op_fx1e(self, digit2),
             (0xF, _, 0, 7) => opcodes::op_fx07(self, digit2),
             (0xF, _, 1, 5) => opcodes::op_fx15(self, digit2),
+            (0xF, _, 3, 3) => opcodes::op_fx33(self, digit2),
             (0xF, _, 5, 5) => opcodes::op_fx55(self, digit2),
             (0xF, _, 6, 5) => opcodes::op_fx65(self, digit2),
             (_, _, _, _) => {
