@@ -1,13 +1,21 @@
+extern crate sdl2;
+
+use std::time::Duration;
+
+use audio::SquareWave;
 use chip8_core::*;
-use sdl2::keyboard::Keycode;
+use sdl2::audio::AudioSpecDesired;
+use sdl2::keyboard::{Keycode, Mod};
 use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::{event::Event, pixels::Color};
+use sdl2::{AudioSubsystem, Sdl};
 
-const SCALE: u32 = 16;
-const WINDOW_WIDTH: u32 = (SCREEN_WIDTH as u32) * SCALE;
-const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * SCALE;
+pub const SCALE: u32 = 23;
+pub const WINDOW_WIDTH: u32 = (SCREEN_WIDTH as u32) * SCALE;
+pub const WINDOW_HEIGHT: u32 = (SCREEN_HEIGHT as u32) * SCALE;
+
 const TICKS_PER_FRAME: u32 = 10;
 
 fn main() {
@@ -22,34 +30,34 @@ fn main() {
         "roms/test_opcode.ch8",
         "roms/heart_monitor.ch8",
         "roms/chipquarium.ch8",
-        "roms/TICTAC",
+        "roms/PONG2",
     ];
-
     let rom_path = paths[9];
 
     // Setup SDL
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
+    let audio_subsystem = sdl_context.audio().unwrap();
+
     let window = video_subsystem
         .window("Chip-8 Emulator", WINDOW_WIDTH, WINDOW_HEIGHT)
         .position_centered()
         .opengl()
         .build()
         .unwrap();
-
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-    canvas.clear();
-    canvas.present();
 
     // Prepare emulator and load ROM
-    let mut _chip8 = Chip8::new();
-    _chip8.load_rom(&rom_path);
+    let mut chip = Chip8::new();
+    chip.load_rom(rom_path);
 
-    // Run emualtor loop
+    // Run emulator loop
     let mut event_pump = sdl_context.event_pump().unwrap();
+    let mut pause_emulator = false;
+
     'emulator_loop: loop {
-        for evt in event_pump.poll_iter() {
-            match evt {
+        for event in event_pump.poll_iter() {
+            match event {
                 Event::Quit { .. }
                 | Event::KeyDown {
                     keycode: Some(Keycode::Escape),
@@ -58,33 +66,81 @@ fn main() {
                     break 'emulator_loop;
                 }
                 Event::KeyDown {
+                    keymod,
+                    keycode: Some(Keycode::Backspace),
+                    ..
+                } => {
+                    if keymod == Mod::LCTRLMOD || keymod == Mod::RCTRLMOD {
+                        println!("Resetting emulator");
+                        chip.reset();
+                    }
+                }
+                Event::KeyDown {
+                    keycode: Some(Keycode::P),
+                    ..
+                } => {
+                    pause_emulator = !pause_emulator;
+                }
+                Event::KeyDown {
                     keycode: Some(key), ..
                 } => {
                     if let Some(button) = key_to_button(key) {
-                        _chip8.key_press(button, true);
+                        chip.key_press(button, true);
                     }
                 }
                 Event::KeyUp {
                     keycode: Some(key), ..
                 } => {
                     if let Some(button) = key_to_button(key) {
-                        _chip8.key_press(button, false);
+                        chip.key_press(button, false);
                     }
                 }
                 _ => (),
             }
         }
 
-        for _ in 0..TICKS_PER_FRAME {
-            _chip8.tick();
+        if pause_emulator {
+            continue;
         }
 
-        _chip8.tick_timers();
-        draw_screen(&_chip8, &mut canvas);
+        // Perform some work cycles
+        for _ in 0..TICKS_PER_FRAME {
+            chip.tick();
+        }
+
+        if chip.sound_timer > 0 && chip.sound_timer == 1 {
+            play_sound(&audio_subsystem);
+        }
+
+        chip.tick_timers();
+        render(&chip, &mut canvas);
     }
 }
 
-fn draw_screen(chip: &Chip8, canvas: &mut Canvas<Window>) {
+fn play_sound(audio_subsystem: &AudioSubsystem) {
+    let desired_spec = AudioSpecDesired {
+        freq: Some(44100),
+        channels: Some(1), // mono
+        samples: None,     // default sample size
+    };
+
+    let device = audio_subsystem
+        .open_playback(None, &desired_spec, |spec| {
+            // initialize the audio callback
+            SquareWave {
+                phase_inc: 440.0 / spec.freq as f32,
+                phase: 0.0,
+                volume: 0.25,
+            }
+        })
+        .unwrap();
+
+    // Start playback
+    device.resume();
+    std::thread::sleep(Duration::from_millis(100));
+}
+
+fn render(chip: &Chip8, canvas: &mut Canvas<Window>) {
     // Clear canvas as black
     canvas.set_draw_color(Color::RGB(6, 138, 41));
     canvas.clear();
@@ -102,6 +158,7 @@ fn draw_screen(chip: &Chip8, canvas: &mut Canvas<Window>) {
             canvas.fill_rect(rect).unwrap();
         }
     }
+
     canvas.present();
 }
 

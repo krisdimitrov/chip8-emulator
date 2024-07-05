@@ -1,16 +1,27 @@
 [package]
 name = "chip8_emulator"
+description = "CHIP-8 emulator"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
 name = "chip8_core"
-path = "src/emulator-core/lib.rs"
+path = "src/core/lib.rs"
 
 [[bin]]
-name = "chip8_ui"
+name = "chip8_emulator"
 path = "src/main.rs"
 
 [dependencies]
 rand = "0.8.5"
 sdl2 = "0.37.0"
+
+[package.metadata.bundle]
+name = "CHIP-8 Emulator"
+identifier = ""
+version = "0.1.0"
+copyright = "Copyright (c) Kris Dimitrov 2024. All rights reserved."
+category = "Utilities"
+short_description = "CHIP-8 emulator."
+long_description = ""
+osx_frameworks = ["SDL2"]

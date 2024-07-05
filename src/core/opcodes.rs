@@ -66,7 +66,7 @@ pub fn op_4xnn(chip: &mut Chip8, op: u16, digit2: u16) {
 
 ///
 /// Skip next instruction if Vx != Vy
-pub fn op_5xy0(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+pub fn op_5xy0(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
 
@@ -95,7 +95,7 @@ pub fn op_7xnn(chip: &mut Chip8, op: u16, digit2: u16) {
 
 ///
 /// Set Vx = Vy
-pub fn op_8xy0(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
+pub fn op_8xy0(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
 
@@ -103,7 +103,7 @@ pub fn op_8xy0(chip: &mut Chip8, op: u16, digit2: u16, digit3: u16) {
 }
 
 ///
-///
+/// Set Vx = Vx OR Vy
 pub fn op_8xy1(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -111,6 +111,8 @@ pub fn op_8xy1(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[x] |= chip.v_registers[y];
 }
 
+///
+/// Set Vx = Vx AND Vy
 pub fn op_8xy2(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -118,6 +120,8 @@ pub fn op_8xy2(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[x] &= chip.v_registers[y];
 }
 
+///
+/// Set Vx = Vx XOR Vy
 pub fn op_8xy3(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -125,6 +129,8 @@ pub fn op_8xy3(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[x] ^= chip.v_registers[y];
 }
 
+///
+/// Set Vx = Vx + Vy, set VF = carry
 pub fn op_8xy4(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -136,6 +142,8 @@ pub fn op_8xy4(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[FLAG_REGISTER_INDEX] = flag_value;
 }
 
+///
+/// Set Vx = Vx - Vy, set VF = NOT borrow
 pub fn op_8xy5(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -147,6 +155,8 @@ pub fn op_8xy5(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[FLAG_REGISTER_INDEX] = flag_value;
 }
 
+///
+/// Set Vx = Vx SHR 1
 pub fn op_8xy6(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -158,6 +168,8 @@ pub fn op_8xy6(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[FLAG_REGISTER_INDEX] = least_bit;
 }
 
+///
+/// Set Vx = Vy - Vx, set VF = NOT borrow
 pub fn op_8xy7(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -169,6 +181,8 @@ pub fn op_8xy7(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[FLAG_REGISTER_INDEX] = flag_value;
 }
 
+///
+/// Set Vx = Vx SHL 1
 pub fn op_8xye(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -180,6 +194,8 @@ pub fn op_8xye(chip: &mut Chip8, digit2: u16, digit3: u16) {
     chip.v_registers[FLAG_REGISTER_INDEX] = least_bit;
 }
 
+///
+/// Skip next instruction if Vx != Vy
 pub fn op_9xy0(chip: &mut Chip8, digit2: u16, digit3: u16) {
     let x = digit2 as usize;
     let y = digit3 as usize;
@@ -196,6 +212,8 @@ pub fn op_annn(chip: &mut Chip8, op: u16) {
     chip.i_register = nnn;
 }
 
+///
+/// Jump to location NNN + V0
 pub fn op_cxnn(chip: &mut Chip8, op: u16, digit2: u16) {
     let x = digit2 as usize;
     let nn = (op & VALUE_MASK) as u8;
@@ -204,6 +222,8 @@ pub fn op_cxnn(chip: &mut Chip8, op: u16, digit2: u16) {
     chip.v_registers[x] = random_value & nn;
 }
 
+///
+/// Draw a sprite at position (Vx, Vy) with N bytes of sprite data starting at the address stored in I
 pub fn op_dxyn(chip: &mut Chip8, digit2: u16, digit3: u16, digit4: u16) {
     // Get the (x, y) coords for our sprite
     let x_coord = chip.v_registers[digit2 as usize] as u16;
@@ -266,12 +286,14 @@ pub fn op_exa1(chip: &mut Chip8, digit2: u16) {
     }
 }
 
+///
+/// Set Vx = delay timer value
 pub fn op_fx0a(chip: &mut Chip8, digit2: u16) {
     let x = digit2 as usize;
     let mut key_pressed = false;
 
     for i in 0..chip.keyboard.len() {
-        if (chip.keyboard[i]) {
+        if chip.keyboard[i] {
             key_pressed = true;
             chip.v_registers[x] = i as u8;
             break;
@@ -283,11 +305,15 @@ pub fn op_fx0a(chip: &mut Chip8, digit2: u16) {
     }
 }
 
+///
+/// Set I = location of sprite for digit Vx
 pub fn op_fx18(chip: &mut Chip8, digit2: u16) {
     let x = digit2 as usize;
     chip.sound_timer = chip.v_registers[x];
 }
 
+///
+/// Set I = location of sprite for digit Vx
 pub fn op_fx29(chip: &mut Chip8, digit2: u16) {
     let x = digit2 as usize;
     let c = chip.v_registers[x] as u16;

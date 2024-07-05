@@ -1,11 +1,12 @@
+pub mod audio;
 ///
 /// Emulator core for the CHIP-8 emulator.
 /// Technical Reference: https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference
-/// 
+///
 /// Author: Kris Dimitrov @krisdimitrov
 /// Special thanks to the following users for their awesome tutorials and materials:
 /// @mattmikolay @Timendus @aquova
-/// 
+///
 pub mod opcodes;
 use std::{fs::File, io::Read};
 
@@ -45,9 +46,9 @@ pub struct Chip8 {
     stack_pointer: u16,
     stack: [u16; STACK_SIZE],
     delay_timer: u8,
-    sound_timer: u8,
     keyboard: [bool; 16],
 
+    pub sound_timer: u8,
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
 }
 
@@ -110,6 +111,8 @@ impl Chip8 {
         self.execute(op);
     }
 
+    ///
+    /// Decrements the delay and sound timers
     pub fn tick_timers(&mut self) {
         if self.delay_timer > 0 {
             self.delay_timer -= 1;
@@ -121,6 +124,19 @@ impl Chip8 {
             }
             self.sound_timer -= 1;
         }
+    }
+
+    pub fn reset(&mut self) {
+        // Reset registers
+        self.program_counter = START_ADDRESS;
+        self.v_registers = [0; NUM_REGS];
+        self.i_register = 0;
+        self.stack_pointer = 0;
+        self.stack = [0; STACK_SIZE];
+        self.delay_timer = 0;
+        self.sound_timer = 0;
+        self.keyboard = [false; 16];
+        self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
     }
 
     ///
@@ -156,10 +172,10 @@ impl Chip8 {
             (2, _, _, _) => opcodes::op_2nnn(self, op),
             (3, _, _, _) => opcodes::op_3xnn(self, op, digit2),
             (4, _, _, _) => opcodes::op_4xnn(self, op, digit2),
-            (5, _, _, 0) => opcodes::op_5xy0(self, op, digit2, digit3),
+            (5, _, _, 0) => opcodes::op_5xy0(self, digit2, digit3),
             (6, _, _, _) => opcodes::op_6xnn(self, op, digit2),
             (7, _, _, _) => opcodes::op_7xnn(self, op, digit2),
-            (8, _, _, 0) => opcodes::op_8xy0(self, op, digit2, digit3),
+            (8, _, _, 0) => opcodes::op_8xy0(self, digit2, digit3),
             (8, _, _, 1) => opcodes::op_8xy1(self, digit2, digit3),
             (8, _, _, 2) => opcodes::op_8xy2(self, digit2, digit3),
             (8, _, _, 3) => opcodes::op_8xy3(self, digit2, digit3),
