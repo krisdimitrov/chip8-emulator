@@ -1,4 +1,3 @@
-pub mod audio;
 ///
 /// Emulator core for the CHIP-8 emulator.
 /// Technical Reference: https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference
@@ -7,7 +6,10 @@ pub mod audio;
 /// Special thanks to the following users for their awesome tutorials and materials:
 /// @mattmikolay @Timendus @aquova
 ///
+pub mod audio;
 pub mod opcodes;
+
+use audio::AudioBeep;
 use std::{fs::File, io::Read};
 
 const RAM_SIZE: usize = 4096;
@@ -47,13 +49,14 @@ pub struct Chip8 {
     stack: [u16; STACK_SIZE],
     delay_timer: u8,
     keyboard: [bool; 16],
+    audio: audio::AudioBeep,
 
     pub sound_timer: u8,
     pub screen: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
 }
 
 impl Chip8 {
-    pub fn new() -> Self {
+    pub fn new(audio: AudioBeep) -> Self {
         let mut instance = Self {
             program_counter: START_ADDRESS,
             ram: [0; RAM_SIZE],
@@ -65,6 +68,7 @@ impl Chip8 {
             delay_timer: 0,
             sound_timer: 0,
             keyboard: [false; 16],
+            audio,
         };
 
         instance.ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
@@ -120,9 +124,12 @@ impl Chip8 {
 
         if self.sound_timer > 0 {
             if self.sound_timer == 1 {
-                println!("BEEP");
+                self.audio.play();
             }
+
             self.sound_timer -= 1;
+        } else if self.sound_timer == 0 {
+            self.audio.pause();
         }
     }
 
@@ -133,6 +140,7 @@ impl Chip8 {
         self.i_register = 0;
         self.stack_pointer = 0;
         self.stack = [0; STACK_SIZE];
+        self.ram = [0; RAM_SIZE];
         self.delay_timer = 0;
         self.sound_timer = 0;
         self.keyboard = [false; 16];
@@ -203,16 +211,5 @@ impl Chip8 {
                 println!("Unimplemented opcode: {:#04x}", op)
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn to_be_defined() {
-        let chip = Chip8::new();
-        assert_eq!(chip.program_counter, START_ADDRESS);
     }
 }

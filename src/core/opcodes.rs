@@ -1,9 +1,9 @@
+use crate::Chip8;
 use rand::random;
 
 ///
 /// OP Code implementations for CHIP-8 emulator core.
 ///
-use crate::Chip8;
 
 /// Used to mask the address from the opcode and extract the 12 least significant bits
 const ADDRESS_MASK: u16 = 0x0FFF;

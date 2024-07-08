@@ -1,24 +1,30 @@
-use sdl2::audio::{AudioCallback, AudioSpecDesired};
+use rodio::{source::SineWave, OutputStream, Sink, Source};
 use std::time::Duration;
 
-pub struct SquareWave {
-    pub phase_inc: f32,
-    pub phase: f32,
-    pub volume: f32,
+pub struct AudioBeep {
+    sink: Sink,
 }
 
-impl AudioCallback for SquareWave {
-    type Channel = f32;
+impl AudioBeep {
+    pub fn new() -> Self {
+        let (_stream, stream_handle) = OutputStream::try_default().unwrap();
+        let sink = Sink::try_new(&stream_handle).unwrap();
 
-    fn callback(&mut self, out: &mut [f32]) {
-        // Generate a square wave
-        for x in out.iter_mut() {
-            *x = if self.phase <= 0.5 {
-                self.volume
-            } else {
-                -self.volume
-            };
-            self.phase = (self.phase + self.phase_inc) % 1.0;
-        }
+        let source = SineWave::new(700.0)
+            .take_duration(Duration::from_secs_f32(2.5))
+            .amplify(0.30);
+
+        sink.append(source);
+        sink.pause();
+
+        AudioBeep { sink }
+    }
+
+    pub fn play(&self) {
+        self.sink.play();
+    }
+
+    pub fn pause(&self) {
+        self.sink.pause();
     }
 }
